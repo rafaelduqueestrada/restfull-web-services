@@ -10,8 +10,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.*;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @RestController
 public class UserRestController {
@@ -20,20 +22,20 @@ public class UserRestController {
     private UserDao userDao;
 
     @GetMapping("/users")
-    public List<UserBean> getAll() {
+    public List<User> getAll() {
         return userDao.findAll();
     }
 
     @GetMapping("/users/{id}")
-    public Resource<UserBean> get(@PathVariable int id) {
-        UserBean userBean = userDao.findOne(id);
-        if (userBean == null)
+    public Resource<User> get(@PathVariable int id) {
+        Optional<User> user = userDao.findById(id);
+        if (!user.isPresent())
             throw new ResourceNotFoundException("Usuário não existe!");
 
         //"all-users", SERVER_PATH + "/users"
         //retrieveAllUsers
         //HATEOAS - Hypermedia as the Engine of Application State
-        Resource<UserBean> resource = new Resource<>(userBean);
+        Resource<User> resource = new Resource<>(user.get());
         ControllerLinkBuilder linkTo = linkTo(methodOn(this.getClass()).getAll());
         resource.add(linkTo.withRel("all-users"));
 
@@ -41,8 +43,8 @@ public class UserRestController {
     }
 
     @PostMapping("/users")
-    public ResponseEntity<Object> createUser(@RequestBody UserBean user){
-        UserBean savedUser = userDao.save(user);
+    public ResponseEntity<Object> createUser(@RequestBody User user){
+        User savedUser = userDao.save(user);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
